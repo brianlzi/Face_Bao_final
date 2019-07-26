@@ -106,9 +106,7 @@ def Testing():
 
 			# Display the resulting image
 		pil_image.show()
-		print("-----------------------------")
-		print(image_file)
-
+		
 def train_prt():
 	# tkinter.Label(window, text = "Train Done !").pack()
 	tkinter.messagebox.showinfo(title = 'info', message= 'Train Done !')
