@@ -17,6 +17,10 @@ import shutil
 import xml.etree.ElementTree as ET
 import threading
 import tkinter
+import tkinter.messagebox
+
+DIR_PATH = 'TRAIN'
+DIR_TEST = 'TEST'
 
 def labelImg():
     os.system(" cd .. && cd labelImg && python labelImg.py")
@@ -28,10 +32,10 @@ def Training():
 	known_face_encodings = []
 	known_face_names = []
 
-	if not os.path.isdir("cache face"):
-		os.mkdir("cache face")
+	if not os.path.isdir(DIR_PATH):
+		os.mkdir(DIR_PATH)
 
-	for root, dirs, files in os.walk("cache face"):
+	for root, dirs, files in os.walk(DIR_PATH):
 		for xml_file in files:
 			if xml_file[-3:] == "xml":
 				tree = ET.parse(os.path.join(root,xml_file))
@@ -53,24 +57,27 @@ def Training():
 def Testing():
 	known_face_encodings, known_face_names = Training()
 	# STEP 2: Using the trained classifier, make predictions for unknown images
-	for image_file in os.listdir("Img Test"):
-		full_file_path = os.path.join("Img Test", image_file)
+	for image_file in os.listdir(DIR_TEST):
+		full_file_path = os.path.join(DIR_TEST, image_file)
 		# unknown_image = face_recognition.load_image_file(full_file_path)
 		unknown_image = face_recognition.load_image_file(full_file_path)
 
 		face_locations = face_recognition.face_locations(unknown_image)
 		face_encodings = face_recognition.face_encodings(unknown_image, face_locations)
-
+		
 		# Convert the image to a PIL-format image so that we can draw on top of it with the Pillow library
 		# See http://pillow.readthedocs.io/ for more about PIL/Pillow
 		pil_image = Image.fromarray(unknown_image).convert("RGB")
 		# Create a Pillow ImageDraw Draw instance to draw with
 		draw = ImageDraw.Draw(pil_image)
 
-
-		for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
+		matches = face_recognition.compare_faces(face_encodings, known_face_encodings[0])
+		face_distances = face_recognition.face_distance(face_encodings, known_face_encodings[0])
+		best_match_index = np.argmin(face_distances)
+		num_face = len(face_encodings)
+		for i, (top, right, bottom, left) in zip(range(num_face), face_locations):
 			# See if the face is a match for the known face(s)
-			matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
+			
 
 			name = "Unknown"
 
@@ -80,47 +87,61 @@ def Testing():
 			#     name = known_face_names[first_match_index]
 
 			# Or instead, use the known face with the smallest distance to the new face
-			face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
-			best_match_index = np.argmin(face_distances)
-			if matches[best_match_index]:
-				name = known_face_names[best_match_index]
+			
+			
+			if i == best_match_index and matches[best_match_index]:
+				name = known_face_names[0]
 
 			# Draw a box around the face using the Pillow module
-			draw.rectangle(((left, top), (right, bottom)), outline=(0, 0, 255), width = 5)
+			draw.rectangle(((left, top), (right, bottom)), outline=(0, 255, 0), width = 3)
 
 			# Draw a label with a name below the face
 			text_width, text_height = draw.textsize(name)
-			draw.rectangle(((left, bottom - text_height - 10), (right, bottom)), fill=(0, 0, 255), outline=(0, 0, 255))
+
 			draw.text((left + 6, bottom - text_height - 5), name, fill=(255, 255, 255, 255))
 
 
 			# Remove the drawing library from memory as per the Pillow docs
-			del draw
+		del draw
 
 			# Display the resulting image
-			pil_image.show()
+		pil_image.show()
+		print("-----------------------------")
+		print(image_file)
 
 def train_prt():
-	tkinter.Label(window, text = "Train Done !").pack()
+	# tkinter.Label(window, text = "Train Done !").pack()
+	tkinter.messagebox.showinfo(title = 'info', message= 'Train Done !')
 
 
 def clear():
-	for root, dirs, files in os.walk("cache face"):
+	for root, dirs, files in os.walk(DIR_PATH):
 		for f in files:
 			if f[-3:] == 'xml':
 				os.unlink(os.path.join(root, f))
 		for d in dirs:
 			shutil.rmtree(os.path.join(root, d))
 
+	# tkinter.Label(window, text = "Clear Done !").pack()
+	tkinter.messagebox.showinfo(title = 'info', message= 'Clear Done !')
 
 if __name__=='__main__':
 	window = tkinter.Tk()
-	window.title("Face Recognition")
-	window.geometry("300x200")    
+	window.title("Face Bao")
+	window.geometry("500x90")    
 
-	tkinter.Button(window, text = "LabelImg", command = labelImg).pack() 
-	tkinter.Button(window, text = "Train!", command = train_prt).pack()
-	tkinter.Button(window, text = "Test", command = Testing).pack()
-	tkinter.Button(window, text = "Clear", command = clear).pack()
+	btn_lb = tkinter.Button(window, text = "Label", command = labelImg)
+	btn_lb.pack(side="left", fill="both", expand="yes", padx="20", pady="20")
+
+	btn_train = tkinter.Button(window, text = "Train", command = train_prt)
+	btn_train.pack(side="left", fill="both", expand="yes", padx="20", pady="20")
+
+	btn_test = tkinter.Button(window, text = "Test", command = Testing)
+	btn_test.pack(side="left", fill="both", expand="yes", padx="20", pady="20")
+
+	btn_cl = tkinter.Button(window, text = "Clear", command = clear)
+	btn_cl.pack(side="left", fill="both", expand="yes", padx="20", pady="20")
+
+	
 	window.mainloop()
 	
