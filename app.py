@@ -18,12 +18,14 @@ import xml.etree.ElementTree as ET
 import threading
 import tkinter
 import tkinter.messagebox
+# import tkMessagebox
+
 
 DIR_PATH = 'TRAIN'
 DIR_TEST = 'TEST'
 
 def labelImg():
-    os.system(" cd .. && cd labelImg && python labelImg.py")
+    os.system("cd labelImg && python labelImg.py")
 
 def Training():
 	'''
@@ -36,29 +38,30 @@ def Training():
 		os.mkdir(DIR_PATH)
 
 	for root, dirs, files in os.walk(DIR_PATH):
-		for xml_file in files:
-			if xml_file[-3:] == "xml":
-				tree = ET.parse(os.path.join(root,xml_file))
-				root = tree.getroot()
-				f_img = root.find('path').text
-				img = cv2.imread(f_img)
+		for d in dirs:
+			for xml_file in os.listdir(os.path.join(root, d)):
+				if xml_file[-3:] == "xml":
+					tree = ET.parse(os.path.join(root, d, xml_file))
+					root = tree.getroot()
+					f_img = root.find('path').text
+					img = cv2.imread(f_img)
 
-				for obj in root.iter('object'):
-					cls = obj.find('name').text
-					xmlbox = obj.find('bndbox')
-					b = (int(xmlbox.find('xmin').text), int(xmlbox.find('xmax').text), int(xmlbox.find('ymin').text), int(xmlbox.find('ymax').text))
-					face_box = img[b[2]:b[3],b[0]:b[1],:]
-					known_face_encodings.append(face_recognition.face_encodings(face_box)[0])
-					known_face_names.append(cls)
+					for obj in root.iter('object'):
+						cls = obj.find('name').text
+						xmlbox = obj.find('bndbox')
+						b = (int(xmlbox.find('xmin').text), int(xmlbox.find('xmax').text), int(xmlbox.find('ymin').text), int(xmlbox.find('ymax').text))
+						face_box = img[b[2]:b[3],b[0]:b[1],:]
+						known_face_encodings.append(face_recognition.face_encodings(face_box)[0])
+						known_face_names.append(cls)
 
-	return known_face_encodings, known_face_names
+					return d, known_face_encodings, known_face_names
 	
 		
 def Testing():
-	known_face_encodings, known_face_names = Training()
+	d, known_face_encodings, known_face_names = Training()
 	# STEP 2: Using the trained classifier, make predictions for unknown images
-	for image_file in os.listdir(DIR_TEST):
-		full_file_path = os.path.join(DIR_TEST, image_file)
+	for image_file in os.listdir(os.path.join(DIR_TEST, d)):
+		full_file_path = os.path.join(DIR_TEST, d, image_file)
 		# unknown_image = face_recognition.load_image_file(full_file_path)
 		unknown_image = face_recognition.load_image_file(full_file_path)
 
@@ -114,11 +117,10 @@ def train_prt():
 
 def clear():
 	for root, dirs, files in os.walk(DIR_PATH):
-		for f in files:
-			if f[-3:] == 'xml':
-				os.unlink(os.path.join(root, f))
 		for d in dirs:
-			shutil.rmtree(os.path.join(root, d))
+			for xml_file in os.listdir(os.path.join(root, d)):
+				if xml_file[-3:] == "xml":
+					os.unlink(os.path.join(root, d, xml_file))
 
 	# tkinter.Label(window, text = "Clear Done !").pack()
 	tkinter.messagebox.showinfo(title = 'info', message= 'Clear Done !')
