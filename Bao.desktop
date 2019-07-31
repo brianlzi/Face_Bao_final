@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Face_Bao
+Exec=bash -i "/home/udth/Face_Bao/run.sh" %f
+Icon=/home/udth/Face_Bao/studio.png
+Categories=Development;IDE;
+Terminal=false
+StartupNotify=true
+StartupWMClass=face-bao
+Name[en_GB]=Bao.desktop
